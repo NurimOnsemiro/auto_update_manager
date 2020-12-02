@@ -69,11 +69,13 @@ async function main() {
         initFtpClient();
         console.log('initFtpClient Ok.');
 
+        //INFO: FTP 서버 파일 목록을 가져온다.
         let fileList = (await getFtpFileList()) as IFileInfo[];
         console.log('getFtpFileList Ok.');
         console.log(fileList);
         let isVersionFileExist: boolean = false;
 
+        //INFO: FTP 서버 파일 중에 원하는 파일이 있는지 검사한다.
         for (let fileInfo of fileList) {
             if (fileInfo.name !== targetFile) {
                 continue;
@@ -88,6 +90,7 @@ async function main() {
 
         console.log('isVersionFileExist Ok.');
 
+        //INFO: 원하는 파일을 서버로부터 읽어들인다.
         let version = await getFtpFile(targetFile);
         console.log('getFtpFile Ok.');
 
