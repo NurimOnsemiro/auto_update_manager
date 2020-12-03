@@ -30,7 +30,11 @@ async function getFtpFileList(): Promise<any[]> {
     });
 }
 
-async function getFtpFile(filename: string): Promise<string> {
+/**
+ * INFO: FTP 서버로부터 파일을 가져온다
+ * @param filename 가져올 파일 이름
+ */
+async function getFtpFileToMemory(filename: string): Promise<Buffer> {
     return new Promise((resolve, reject) => {
         if (ftp == null) {
             reject('ftp is null');
@@ -39,9 +43,9 @@ async function getFtpFile(filename: string): Promise<string> {
             if (err) {
                 reject(err);
             }
-            let res: string = '';
+            let res: Buffer = Buffer.from('');
             socket.on('data', data => {
-                res += data.toString('utf8');
+                res = Buffer.concat([res, data]);
             });
             socket.on('close', err => {
                 if (err) {
@@ -52,6 +56,16 @@ async function getFtpFile(filename: string): Promise<string> {
             socket.resume();
         });
     });
+}
+
+/**
+ * INFO: FTP 서버 파일을 로컬에 저장한다
+ * @param filename 저장할 파일 이름
+ */
+async function saveFtpFileToLocal(filename: string): Promise<void> {
+    let res: Buffer = await getFtpFileToMemory(filename);
+    let asyncWriteFile = util.promisify(fs.writeFile);
+    await asyncWriteFile(filename, res);
 }
 
 function initFtpClient() {
@@ -91,10 +105,12 @@ async function main() {
         console.log('isVersionFileExist Ok.');
 
         //INFO: 원하는 파일을 서버로부터 읽어들인다.
-        let version = await getFtpFile(targetFile);
+        let version: string = (await getFtpFileToMemory(targetFile)).toString('utf8');
         console.log('getFtpFile Ok.');
-
         console.log('version : ' + version);
+
+        //INFO: 원하는 파일을 내려받아 로컬에 저장한다
+        await saveFtpFileToLocal(targetFile);
     } catch (ex) {
         console.error(ex);
         process.exit(0);
